@@ -1,22 +1,22 @@
 import http.server
-import random
-from prometheus_client import start_http_server, Counter
+from prometheus_client import start_http_server, Summary
+import time
 
-REQUEST_COUNT=Counter('app_requests_count','total all http request count',['app_name','endpoint'])
-RANDOM_COUNT=Counter('app_random_count','increment counter by random value')
+REQUEST_RESPOND_TIME=Summary('app_response_latency_seconds','Response latency in seconds')
 APP_PORT = 8000
 METRICS_PORT=8001
 
 class HandleRequests(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
-        REQUEST_COUNT.labels('prom_python_app',self.path).inc() #increase metric value 
-        random_val=random.random()*10
-        RANDOM_COUNT.inc(random_val)
+        start_time=time.time()
+        time.sleep(5)
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write(bytes("<html><head><title>First Application</title></head><body style='color: #333; margin-top: 30px;'><center><h2>Welcome to our first Prometheus-Python application.</center></h2></body></html>", "utf-8"))
         self.wfile.close()
+        time_taken=time.time()-start_time
+        REQUEST_RESPOND_TIME.observe(time_taken)
 
 if __name__ == "__main__":
     start_http_server(METRICS_PORT)
